@@ -4,10 +4,16 @@ from aimacode.utils import expr, Expr
 from lp_utils import decode_state
 
 
-def do_effects_negate(effect1, effect2):
-    """returns True if the effects are negating"""
+def is_mutex(node1, node2) -> bool:
+    """Returns true if two literal nodes are mutex
+    Args:
+        node1(PgNode_s): literal node
+        node2(PgNode_s): literal node
+    Returns:
+        bool
+    """
 
-    if effect1.symbol == effect2.symbol and int(effect1.is_pos - effect2.is_pos) != 0:
+    if node1.symbol == node2.symbol and int(node1.is_pos - node2.is_pos) != 0:
         return True
     return False
 
@@ -308,7 +314,6 @@ class PlanningGraph():
             
         """
 
-
     def _is_action_possible_(self, action, level):
         """ test if action is possible"""
         for node in action.prenodes:
@@ -346,13 +351,12 @@ class PlanningGraph():
 
                 for parent in action_node.parents:
                     parent.children.add(action_node)
-                    
+
                 # add the node
 
                 action_nodes.add(action_node)
 
         self.a_levels.append(action_nodes)
-
 
     def add_literal_level(self, level):
         """ add an S (literal) level to the Planning Graph
@@ -374,7 +378,7 @@ class PlanningGraph():
 
         effnodes = set()
 
-        for action in self.a_levels[level-1]:
+        for action in self.a_levels[level - 1]:
             for effnode in action.effnodes:
                 if effnode not in effnodes:
                     effnodes.add(effnode)
@@ -384,7 +388,6 @@ class PlanningGraph():
                 action.children.add(effnode)
 
         self.s_levels.append(effnodes)
-
 
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes
@@ -443,10 +446,11 @@ class PlanningGraph():
         :return: bool
         """
 
-
-
-
-
+        # unfortunately this is quadratic  need to compare all the effects for each
+        for effect1 in node_a1.effnodes:
+            for effect2 in node_a2.effnodes:
+                if is_mutex(effect1, effect2):
+                    return True
         return False
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -463,7 +467,18 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-        # TODO test for Interference between nodes
+
+        # Again this is quadratic need to check the prenodes against the effnodes but need to do for each
+        for effect in node_a1.effnodes:
+            for precondition in node_a2.prenodes:
+                if is_mutex(effect, precondition):
+                    return True
+
+        for effect in node_a2.effnodes:
+            for precondition in node_a1.prenodes:
+                if is_mutex(effect, precondition):
+                    return True
+
         return False
 
     def competing_needs_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -477,7 +492,12 @@ class PlanningGraph():
         :return: bool
         """
 
-        # TODO test for Competing Needs between nodes
+        # quadratic again Ugh. But these are not expected to have many effects or preconditions
+        for precond1 in node_a1.prenodes:
+            for precond2 in node_a2.prenodes:
+                if is_mutex(precond1, precond2):
+                    return True
+
         return False
 
     def update_s_mutex(self, nodeset: set):
@@ -512,8 +532,7 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         """
-        # TODO test for negation between nodes
-        return False
+        return is_mutex(node_s1, node_s2)
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
         """
@@ -532,7 +551,20 @@ class PlanningGraph():
         :return: bool
         """
         # TODO test for Inconsistent Support between nodes
-        return False
+        # Check if the two nodes are mutually exclusive
+
+        if is_mutex(node_s1, node_s2):
+            return True
+
+        # check if every pair of actions in mutally exclusive
+        mutex = True
+
+        for parent1 in node_s1.parents:
+            for parent2 in node_s2.parents:
+                if not parent1.is_mutex(parent2):
+                    mutex = False
+
+        return mutex
 
     def h_levelsum(self) -> int:
         """The sum of the level costs of the individual goals (admissible if goals independent)
