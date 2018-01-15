@@ -224,9 +224,11 @@ class AirCargoProblem(Problem):
         conditions by ignoring the preconditions required for an action to be
         executed.
         """
-        # TODO implement (see Russell-Norvig Ed-3 10.2.3  or Russell-Norvig Ed-2 11.2)
-        count = 0
-        return count
+
+        current_state = decode_state(node.state, self.state_map)
+        goal_state = self.goal
+
+        return sum([1 for literal in goal_state if literal not in current_state.pos])
 
 
 def air_cargo_p1() -> AirCargoProblem:

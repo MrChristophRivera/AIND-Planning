@@ -4,6 +4,32 @@ from aimacode.utils import expr, Expr
 from lp_utils import decode_state
 
 
+def do_effects_negate(effect1, effect2):
+    """returns True if the effects are negating"""
+
+    if effect1.symbol == effect2.symbol and int(effect1.is_pos - effect2.is_pos) != 0:
+        return True
+    return False
+
+
+def is_action_possible(action, clauses):
+    """Checks to see if action is possible given the current clauses
+    Args:
+        action(Action): the action
+        kb(ProbKB): knowledge base
+    Returns:
+        bool: True if possible
+    """
+    is_possible = True
+    for clause in action.precond_pos:
+        if clause not in clauses:
+            is_possible = False
+    for clause in action.precond_neg:
+        if clause in clauses:
+            is_possible = False
+
+    return is_possible
+
 
 class PgNode():
     """Base class for planning graph nodes.
@@ -101,7 +127,6 @@ class PgNode_s(PgNode):
 
 class PgNode_a(PgNode):
     """A-type (action) Planning Graph node - inherited from PgNode """
-
 
     def __init__(self, action: Action):
         """A-level Planning Graph node constructor
@@ -278,8 +303,16 @@ class PlanningGraph():
             self.s_levels[level].add(PgNode_s(literal, False))
         # no mutexes at the first level
 
+
         # continue to build the graph alternating A, S levels until last two S levels contain the same literals,
         # i.e. until it is "leveled"
+        self.add_action_level(0)
+        self.add_literal_level(1)
+        self.add_action_level(1)
+        return
+
+        """
+
         while not leveled:
             self.add_action_level(level)
             self.update_a_mutex(self.a_levels[level])
@@ -290,6 +323,17 @@ class PlanningGraph():
 
             if self.s_levels[level] == self.s_levels[level - 1]:
                 leveled = True
+                
+            
+        """
+
+
+    def _is_action_possible_(self, action, level):
+        """ test if action is possible"""
+        for node in action.prenodes:
+            if node not in self.s_levels[level]:
+                return False
+            return True
 
     def add_action_level(self, level):
         """ add an A (action) level to the Planning Graph
@@ -303,10 +347,31 @@ class PlanningGraph():
         # TODO add action A level to the planning graph as described in the Russell-Norvig text
         # 1. determine what actions to add and create those PgNode_a objects
         # 2. connect the nodes to the previous S literal level
-        # for example, the A0 level will iterate through all possible actions for the problem and add a PgNode_a to a_levels[0]
+        # for example, the A0r level will iterate through all possible actions for the problem and add a PgNode_a to a_levels[0]
         #   set iff all prerequisite literals for the action hold in S0.  This can be accomplished by testing
         #   to see if a proposed PgNode_a has prenodes that are a subset of the previous S level.  Once an
         #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
+
+        action_nodes = set()
+
+        for action in self.all_actions:
+            action_node = PgNode_a(action)
+
+            # check to see fi the action is possible
+            if self._is_action_possible_(action_node, level):
+
+                # if the action is possible, connect the parents and child
+                action_node.parents = {node for node in self.s_levels[level] if node in action_node.prenodes}
+
+                for parent in action_node.parents:
+                    parent.children.add(action_node)
+                    
+                # add the node
+
+                action_nodes.add(action_node)
+
+        self.a_levels.append(action_nodes)
+
 
     def add_literal_level(self, level):
         """ add an S (literal) level to the Planning Graph
@@ -317,7 +382,7 @@ class PlanningGraph():
         :return:
             adds S nodes to the current level in self.s_levels[level]
         """
-        # TODO add literal S level to the planning graph as described in the Russell-Norvig text
+
         # 1. determine what literals to add
         # 2. connect the nodes
         # for example, every A node in the previous level has a list of S nodes in effnodes that represent the effect
@@ -325,6 +390,20 @@ class PlanningGraph():
         #   may be "added" to the set without fear of duplication.  However, it is important to then correctly create and connect
         #   all of the new S nodes as children of all the A nodes that could produce them, and likewise add the A nodes to the
         #   parent sets of the S nodes
+
+        effnodes = set()
+
+        for action in self.a_levels[level-1]:
+            for effnode in action.effnodes:
+                if effnode not in effnodes:
+                    effnodes.add(effnode)
+
+                # connect the parent and child
+                effnode.parents.add(action)
+                action.children.add(effnode)
+
+        self.s_levels.append(effnodes)
+
 
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes
@@ -382,7 +461,11 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-        # TODO test for Inconsistent Effects between nodes
+
+
+
+
+
         return False
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
