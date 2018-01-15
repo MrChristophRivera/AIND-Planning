@@ -330,7 +330,6 @@ class PlanningGraph():
         :return:
             adds A nodes to the current level in self.a_levels[level]
         """
-        # TODO add action A level to the planning graph as described in the Russell-Norvig text
         # 1. determine what actions to add and create those PgNode_a objects
         # 2. connect the nodes to the previous S literal level
         # for example, the A0r level will iterate through all possible actions for the problem and add a PgNode_a to a_levels[0]
@@ -550,7 +549,6 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         """
-        # TODO test for Inconsistent Support between nodes
         # Check if the two nodes are mutually exclusive
 
         if is_mutex(node_s1, node_s2):
