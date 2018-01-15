@@ -1,7 +1,6 @@
 from aimacode.logic import associate
 from aimacode.utils import expr
 
-
 class FluentState():
     """ state object for planning problems as positive and negative fluents
 

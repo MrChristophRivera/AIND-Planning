@@ -4,6 +4,7 @@ from aimacode.utils import expr, Expr
 from lp_utils import decode_state
 
 
+
 class PgNode():
     """Base class for planning graph nodes.
 
