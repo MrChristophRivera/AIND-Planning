@@ -12,23 +12,6 @@ def do_effects_negate(effect1, effect2):
     return False
 
 
-def is_action_possible(action, clauses):
-    """Checks to see if action is possible given the current clauses
-    Args:
-        action(Action): the action
-        kb(ProbKB): knowledge base
-    Returns:
-        bool: True if possible
-    """
-    is_possible = True
-    for clause in action.precond_pos:
-        if clause not in clauses:
-            is_possible = False
-    for clause in action.precond_neg:
-        if clause in clauses:
-            is_possible = False
-
-    return is_possible
 
 
 class PgNode():
