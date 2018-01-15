@@ -12,8 +12,6 @@ def do_effects_negate(effect1, effect2):
     return False
 
 
-
-
 class PgNode():
     """Base class for planning graph nodes.
 
