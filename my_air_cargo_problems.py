@@ -70,7 +70,7 @@ class AirCargoProblem(Problem):
                         effect_rem = [expr("At({}, {})".format(c, a))]
 
                         # set up the action.
-                        load = Action(expr("Load({}, {})".format(c, p)),
+                        load = Action(expr("Load({}, {}, {})".format(c, p, a)),
                                       [precond_pos, precond_neg],
                                       [effect_add, effect_rem])
 
@@ -83,7 +83,6 @@ class AirCargoProblem(Problem):
             :return: list of Action objects
             """
             unloads = []
-            # TODO create all Unload ground actions from the domain Unload action
 
             for c in self.cargos:
                 for p in self.planes:
@@ -101,7 +100,7 @@ class AirCargoProblem(Problem):
                         effect_rem = [expr("In({}, {})".format(c, p))]
 
                         # set up the action
-                        unload = Action(expr("Unload({}, {})".format(c, p)),
+                        unload = Action(expr("Unload({}, {}, {})".format(c, p, a)),
                                       [precond_pos, precond_neg],
                                       [effect_add, effect_rem])
 

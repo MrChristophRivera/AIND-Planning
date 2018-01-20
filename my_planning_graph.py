@@ -290,9 +290,9 @@ class PlanningGraph():
             self.s_levels[level].add(PgNode_s(literal, False))
         # no mutexes at the first level
 
-
         # continue to build the graph alternating A, S levels until last two S levels contain the same literals,
         # i.e. until it is "leveled"
+        """
         self.add_action_level(0)
         self.add_literal_level(1)
         self.add_action_level(1)
@@ -310,9 +310,6 @@ class PlanningGraph():
 
             if self.s_levels[level] == self.s_levels[level - 1]:
                 leveled = True
-                
-            
-        """
 
     def _is_action_possible_(self, action, level):
         """ test if action is possible"""
@@ -492,9 +489,9 @@ class PlanningGraph():
         """
 
         # quadratic again Ugh. But these are not expected to have many effects or preconditions
-        for precond1 in node_a1.prenodes:
-            for precond2 in node_a2.prenodes:
-                if is_mutex(precond1, precond2):
+        for parent1 in node_a1.parents:
+            for parent2 in node_a2.parents:
+                if parent1.is_mutex(parent2):
                     return True
 
         return False
@@ -569,7 +566,16 @@ class PlanningGraph():
 
         :return: int
         """
+
+        # Generate a dictionary of with keys as level and values as sets containing the literal symbols
+        level_dict = {level: {node.symbol for node in self.s_levels[level] if node.is_pos} for level in
+                             range(len(self.s_levels))}
+
         level_sum = 0
-        # TODO implement
-        # for each goal in the problem, determine the level cost, then add them together
+        for goal in self.problem.goal:
+            for level, literals in level_dict.items():
+                if goal in literals:
+                    level_sum += level
+                    break
+
         return level_sum

@@ -4,12 +4,9 @@ import pandas as pd
 from collections import OrderedDict
 from timeit import default_timer as timer
 from aimacode.search import InstrumentedProblem
-from aimacode.search import (breadth_first_search, astar_search,
-                             breadth_first_tree_search, depth_first_graph_search, uniform_cost_search,
-                             greedy_best_first_graph_search, depth_limited_search,
-                             recursive_best_first_search)
-from my_air_cargo_problems import air_cargo_p1, air_cargo_p2, air_cargo_p3
+
 from run_search import PROBLEMS, SEARCHES, PrintableProblem
+from  tqdm import tqdm_notebook
 
 
 class PrintableProblem(InstrumentedProblem):
@@ -22,7 +19,7 @@ class PrintableProblem(InstrumentedProblem):
         return '{:^10d}  {:^10d}  {:^10d}'.format(self.succs, self.goal_tests, self.states)
 
 
-def run_search(problem,  search_function, problem_name='Problem 1', search_function_name='BFS',  parameter=None):
+def run_search(problem, search_function, problem_name='Problem 1', search_function_name='BFS', parameter=None):
     ip = PrintableProblem(problem)
     start = timer()
     if parameter is not None:
@@ -39,9 +36,9 @@ def run_search(problem,  search_function, problem_name='Problem 1', search_funct
         path = []
         for action in node.solution():
             path.append("{}{}".format(action.name, action.args))
-        path = '->'.join(path)
+        path = '\n'.join(path)
 
-    results = OrderedDict( {
+    results = OrderedDict({
         'Problem': problem_name,
         'Search Function': search_function_name,
         'Expansions': ip.succs,
@@ -52,27 +49,30 @@ def run_search(problem,  search_function, problem_name='Problem 1', search_funct
         'Solution Path': path,
     })
 
-    return pd.DataFrame(results, index = [problem_name])
+    return pd.DataFrame(results, index=[problem_name])
 
 
-def iterate_searches(problems, searches, times=1):
-    """Scans through problems with searches"""
+def iterate_searches(problem, searches, times=1):
+    """Scans through single problem with searches
+    Args:
+        problem(list): first item is Name, second item is function for creating the problem
+        searches(list): the list of searches.
+        times(int): the number of times to do the search.
+    Returns data frame
+    """
+    results = []
 
-    results =[]
-    for problem in problems:
-        for search in searches:
-            for i in range(times):
-                name = problem[0]
-                p = problem[1]()
-                search_name = search[0]
-                search_function = search[1]
-                if search[2]=='':
-                    param = None
-                else:
-                    param = search[2]
+    for search in tqdm_notebook(searches):
+        for i in tqdm_notebook(range(times)):
+            name = problem[0]
+            p = problem[1]()
+            search_name = search[0]
+            search_function = search[1]
+            if search[2] == '':
+                param = None
+            else:
+                param = search[2]
 
-                results.append(run_search(p,search_function, name, search_name, param))
+            results.append(run_search(p, search_function, name, search_name, param))
 
-    return pd.concat(results, axis=0).reset_index()
-
-
+    return pd.concat(results, axis=0).reset_index(drop =True)
